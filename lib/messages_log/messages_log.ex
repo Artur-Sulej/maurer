@@ -1,18 +1,18 @@
-defmodule SinglyLinkedList do
-  alias SinglyLinkedList.Item
+defmodule Maurer.MessagesLog do
+  alias Maurer.MessagesLog.Item
 
-  def init(list_id) do
+  def init_topic(topic) do
     Agent.start_link(
       fn -> %{head_id: nil, tail_id: nil, map: %{}} end,
-      name: list_id
+      name: topic
     )
 
-    list_id
+    topic
   end
 
-  def append_tail(value, list_id) do
+  def append_tail(value, topic) do
     Agent.update(
-      list_id,
+      topic,
       fn
         %{head_id: nil} ->
           {new_item_id, new_item} = Item.build(value)
@@ -31,19 +31,19 @@ defmodule SinglyLinkedList do
     )
   end
 
-  def get_item(item_id, list_id) do
-    Agent.get(list_id, fn %{map: map} -> map[item_id] end)
+  def get_item(item_id, topic) do
+    Agent.get(topic, fn %{map: map} -> map[item_id] end)
   end
 
-  def get_state(list_id) do
-    Agent.get(list_id, fn s -> s end)
+  def get_state(topic) do
+    Agent.get(topic, fn state -> state end)
   end
 
-  def get_head_id(list_id) do
-    Agent.get(list_id, fn state -> state.head_id end)
+  def get_head_id(topic) do
+    Agent.get(topic, fn state -> state.head_id end)
   end
 
-  def get_tail_id(list_id) do
-    Agent.get(list_id, fn state -> state.tail_id end)
+  def get_tail_id(topic) do
+    Agent.get(topic, fn state -> state.tail_id end)
   end
 end

@@ -1,13 +1,15 @@
-defmodule Consumer do
-  def stream(list_id, consume_fun \\ nil) do
+defmodule Maurer.Consumer do
+  alias Maurer.MessagesLog
+
+  def stream(topic, consume_fun \\ nil) do
     Stream.unfold(
       {:next, nil},
       fn
         {status, item_id} ->
-          item_id = item_id || SinglyLinkedList.get_head_id(list_id)
+          item_id = item_id || MessagesLog.get_head_id(topic)
 
           with item_id when not is_nil(item_id) <- item_id,
-               %{next: next_item_id, value: value} <- SinglyLinkedList.get_item(item_id, list_id) do
+               %{next: next_item_id, value: value} <- MessagesLog.get_item(item_id, topic) do
             next_fun(status, item_id, next_item_id, value, consume_fun)
           else
             nil -> {nil, {:next, nil}}
