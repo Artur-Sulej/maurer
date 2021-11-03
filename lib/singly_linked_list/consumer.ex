@@ -1,16 +1,14 @@
 defmodule Consumer do
-  @list_id :kalafior
-
-  def stream do
+  def stream(list_id, consume_fun \\ nil) do
     Stream.unfold(
       {:next, nil},
       fn
         {status, item_id} ->
-          item_id = item_id || SinglyLinkedList.get_head_id(@list_id)
+          item_id = item_id || SinglyLinkedList.get_head_id(list_id)
 
           with item_id when not is_nil(item_id) <- item_id,
-               %{next: next_item_id, value: value} <- SinglyLinkedList.get_item(item_id, @list_id) do
-            next_fun(status, item_id, next_item_id, value)
+               %{next: next_item_id, value: value} <- SinglyLinkedList.get_item(item_id, list_id) do
+            next_fun(status, item_id, next_item_id, value, consume_fun)
           else
             nil -> {nil, {:next, nil}}
           end
@@ -19,14 +17,14 @@ defmodule Consumer do
     |> Stream.reject(&is_nil/1)
   end
 
-  defp next_fun(status, item_id, next_item_id, value) do
+  defp next_fun(status, item_id, next_item_id, value, consume_fun) do
     case {status, next_item_id} do
       {:next, nil} ->
-        consume(value)
+        if consume_fun, do: consume_fun.(value)
         {value, {:tail, item_id}}
 
       {:next, next_item_id} ->
-        consume(value)
+        if consume_fun, do: consume_fun.(value)
         {value, {:next, next_item_id}}
 
       {:tail, nil} ->
@@ -35,9 +33,5 @@ defmodule Consumer do
       {:tail, next_item_id} ->
         {nil, {:next, next_item_id}}
     end
-  end
-
-  defp consume(value) do
-    IO.puts("--- #{inspect(value)} ---")
   end
 end
