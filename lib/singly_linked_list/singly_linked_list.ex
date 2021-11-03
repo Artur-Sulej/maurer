@@ -10,7 +10,7 @@ defmodule SinglyLinkedList do
     list_id
   end
 
-  def append_tail(list_id, value) do
+  def append_tail(value, list_id) do
     Agent.update(
       list_id,
       fn
@@ -31,8 +31,12 @@ defmodule SinglyLinkedList do
     )
   end
 
-  def get_item(list_id, item_id) do
+  def get_item(item_id, list_id) do
     Agent.get(list_id, fn %{map: map} -> map[item_id] end)
+  end
+
+  def get_state(list_id) do
+    Agent.get(list_id, fn s -> s end)
   end
 
   def get_head_id(list_id) do
