@@ -3,23 +3,23 @@ defmodule Consumer do
 
   def stream do
     Stream.unfold(
-      {:next, SinglyLinkedList.get_head_id(@list_id)},
+      {:next, nil},
       fn
         {status, item_id} ->
           item_id = item_id || SinglyLinkedList.get_head_id(@list_id)
-          next_fun(status, item_id)
+
+          with item_id when not is_nil(item_id) <- item_id,
+               %{next: next_item_id, value: value} <- SinglyLinkedList.get_item(item_id, @list_id) do
+            next_fun(status, item_id, next_item_id, value)
+          else
+            nil -> {nil, {:next, nil}}
+          end
       end
     )
     |> Stream.reject(&is_nil/1)
   end
 
-  defp next_fun(:next, nil) do
-    {nil, {:next, nil}}
-  end
-
-  defp next_fun(status, item_id) do
-    %{next: next_item_id, value: value} = SinglyLinkedList.get_item(item_id, @list_id)
-
+  defp next_fun(status, item_id, next_item_id, value) do
     case {status, next_item_id} do
       {:next, nil} ->
         consume(value)
@@ -35,10 +35,6 @@ defmodule Consumer do
       {:tail, next_item_id} ->
         {nil, {:next, next_item_id}}
     end
-  end
-
-  def listen do
-    stream() |> Stream.run()
   end
 
   defp consume(value) do
