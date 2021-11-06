@@ -4,7 +4,7 @@ defmodule Maurer.MessagesLog do
   def init_topic(topic) do
     Agent.start_link(
       fn -> %{head_id: nil, tail_id: nil, map: %{}} end,
-      name: topic
+      name: agent_name(topic)
     )
 
     topic
@@ -12,7 +12,7 @@ defmodule Maurer.MessagesLog do
 
   def append_tail(value, topic) do
     Agent.update(
-      topic,
+      agent_name(topic),
       fn
         %{head_id: nil} ->
           {new_item_id, new_item} = Item.build(value)
@@ -32,18 +32,20 @@ defmodule Maurer.MessagesLog do
   end
 
   def get_item(item_id, topic) do
-    Agent.get(topic, fn %{map: map} -> map[item_id] end)
+    Agent.get(agent_name(topic), fn %{map: map} -> map[item_id] end)
   end
 
   def get_state(topic) do
-    Agent.get(topic, fn state -> state end)
+    Agent.get(agent_name(topic), fn state -> state end)
   end
 
   def get_head_id(topic) do
-    Agent.get(topic, fn state -> state.head_id end)
+    Agent.get(agent_name(topic), fn state -> state.head_id end)
   end
 
   def get_tail_id(topic) do
-    Agent.get(topic, fn state -> state.tail_id end)
+    Agent.get(agent_name(topic), fn state -> state.tail_id end)
   end
+
+  defp agent_name(topic), do: :"maurer_message_log_#{topic}"
 end
