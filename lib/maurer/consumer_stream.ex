@@ -1,4 +1,4 @@
-defmodule Maurer.Consumer do
+defmodule Maurer.Consumer.Stream do
   alias Maurer.MessagesLog
 
   def stream(topics) do
@@ -27,13 +27,13 @@ defmodule Maurer.Consumer do
 
     with item_id when not is_nil(item_id) <- item_id,
          %{next: next_item_id, value: value} <- MessagesLog.get_item(item_id, topic) do
-      build_state(status, item_id, next_item_id, value, topic)
+      new_state(status, item_id, next_item_id, value, topic)
     else
       nil -> {nil, {:next, nil, topic}}
     end
   end
 
-  defp build_state(status, item_id, next_item_id, value, topic) do
+  defp new_state(status, item_id, next_item_id, value, topic) do
     case {status, next_item_id} do
       {:next, nil} ->
         {value, {:tail, item_id, topic}}
@@ -45,7 +45,7 @@ defmodule Maurer.Consumer do
         {nil, {:tail, item_id, topic}}
 
       {:tail, next_item_id} ->
-        {nil, {:next, next_item_id, topic}}
+        next_item(:next, next_item_id, topic)
     end
   end
 end
