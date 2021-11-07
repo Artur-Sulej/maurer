@@ -8,31 +8,43 @@ defmodule Maurer.Consumer.GenServer do
 
       # Client
 
-      def start_link(topic) do
-        {:ok, _} =
-          GenServer.start_link(__MODULE__, %{status: :next, item_id: nil, topic: topic},
-            name: topic
-          )
+      def start_link(topics) when is_list(topics) do
+        state =
+          topics
+          |> Enum.map(fn topic ->
+            {topic, %{status: :next, item_id: nil}}
+          end)
+          |> Enum.into(%{})
+
+        {:ok, _} = GenServer.start_link(__MODULE__, state, name: String.to_atom(inspect(topics)))
       end
 
       # Server (callbacks)
 
       @impl true
       def init(state) do
-        schedule_next_message()
+        state
+        |> Map.keys()
+        |> Enum.each(&schedule_next_message/1)
+
         {:ok, state}
       end
 
-      defp schedule_next_message do
-        Process.send(self(), :next_message, [])
+      defp schedule_next_message(topic) do
+        Process.send(self(), {:next_message, topic}, [])
       end
 
       @impl true
-      def handle_info(:next_message, %{status: status, item_id: item_id, topic: topic}) do
-        {value, {new_status, next_item_id, topic}} = next_item(status, item_id, topic)
+      def handle_info({:next_message, topic}, state) do
+        topic_state = state[topic]
+
+        {value, {new_status, next_item_id, topic}} =
+          next_item(topic_state.status, topic_state.item_id, topic)
+
         unless is_nil(value), do: consume(value)
-        schedule_next_message()
-        {:noreply, %{status: new_status, item_id: next_item_id, topic: topic}}
+        new_state = put_in(state, [topic], %{status: new_status, item_id: next_item_id})
+        schedule_next_message(topic)
+        {:noreply, new_state}
       end
 
       defp next_item(status, item_id, topic) do
