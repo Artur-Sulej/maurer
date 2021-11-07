@@ -47,5 +47,5 @@ defmodule Maurer.MessagesLog do
     Agent.get(agent_name(topic), fn state -> state.tail_id end)
   end
 
-  defp agent_name(topic), do: :"maurer_message_log_#{topic}"
+  defp agent_name(topic), do: String.to_atom("#{__MODULE__}.#{topic}")
 end
